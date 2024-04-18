@@ -4,7 +4,7 @@ set -euo pipefail
 
 ## Git submodules
 
-git submodule update --init
+sudo git submodule update --init
 
 ## Utils
 
