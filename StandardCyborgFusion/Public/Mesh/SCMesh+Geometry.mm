@@ -28,6 +28,13 @@ using math::Vec2;
                           length:geo.vertexCount() * sizeof(Vec3)];
 }
 
++ (NSData *)_colorDataFromGeometry:(const sc3d::Geometry &)geo
+{
+    return [NSData dataWithBytes:geo.getColors().data()
+                          length:geo.vertexCount() * sizeof(Vec3)];
+}
+
+
 + (NSData *)_normalDataFromGeometry:(const sc3d::Geometry &)geo
 {
     std::vector<Vec3> normalizedNormals;
@@ -53,6 +60,23 @@ using math::Vec2;
 {
     return [NSData dataWithBytes:(const void *)geo.getFaces().data()
                           length:geo.faceCount() * sizeof(int) * 3];
+}
+
++ (SCMesh *)meshWithVertexColorsFromGeometry:(const sc3d::Geometry &)geo
+{    
+    if (geo.vertexCount() == 0 || geo.faceCount() == 0) {
+        return nil;
+    }
+    
+    NSData *positionData = [self _positionDataFromGeometry:geo];
+    NSData *normalData = [self _normalDataFromGeometry:geo];
+    NSData *colorData = [self _colorDataFromGeometry:geo];
+    NSData *facesData = [self _facesDataFromGeometry:geo];
+
+    return [[SCMesh alloc] initWithPositionData:positionData
+                                     normalData:normalData
+                                      colorData:colorData
+                                      facesData:facesData];
 }
 
 + (SCMesh *)meshFromGeometry:(const sc3d::Geometry &)geo
@@ -108,6 +132,9 @@ using math::Vec2;
     Vec3 *normalsStart = (Vec3 *)[self.normalData bytes];
     Vec3 *normalsEnd = normalsStart + [self.normalData length] / sizeof(Vec3);
     
+    Vec3 *colorsStart = (Vec3 *)[self.colorData bytes];
+    Vec3 *colorsEnd = colorsStart + [self.colorData length] / sizeof(Vec3);
+    
     Vec2 *texCoordsStart = (Vec2 *)[self.texCoordData bytes];
     Vec2 *texCoordsEnd = texCoordsStart + [self.texCoordData length] / sizeof(Vec2);
     
@@ -121,6 +148,10 @@ using math::Vec2;
     
     geo.setPositions(positions);
     geo.setNormals(normals);
+    if ([self.colorData length] > 0) {
+        std::vector<Vec3> colors(colorsStart, colorsEnd);
+        geo.setColors(colors);
+    }
     geo.setTexCoords(texCoords);
     geo.setFaces(faces);
     
